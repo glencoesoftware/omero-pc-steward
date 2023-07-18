@@ -17,9 +17,14 @@
  */
 package com.glencoesoftware.omero;
 
+import java.util.List;
+
 import org.slf4j.LoggerFactory;
 
+import Ice.ObjectNotExistException;
+import ome.services.blitz.repo.ManagedImportProcessI;
 import ome.services.blitz.repo.ProcessContainer;
+import omero.cmd.HandlePrx;
 
 /**
  * Steward for {@link ProcessContainer} who is periodically asked to perform
@@ -39,8 +44,24 @@ public class ProcessContainerSteward implements Runnable {
 
     @Override
     public void run() {
-        int count = processContainer.listProcesses(null).size();
+        List<ProcessContainer.Process> processes = processContainer.listProcesses(null);
+        int count = processes.size();
         log.info("Number of processes in the container: {}", count);
+        for (ProcessContainer.Process p : processes) {
+            try {
+                ManagedImportProcessI mip = (ManagedImportProcessI) p;
+                // NOTE: If the import is in process, this getHandle will work
+                // but will often/always return null; If the import has completed,
+                // getHandle will throw ObjectNotExistException
+                HandlePrx handle = mip.getHandle(null);
+            } catch (ObjectNotExistException e) {
+                log.info("ObjectNotExistException thrown by process.getHandle,"
+                        + " cleaning up process");
+                processContainer.removeProcess(p);
+            } catch (Exception e) {
+                log.error("Unexpected exception", e);
+            }
+        }
     }
 
 }
