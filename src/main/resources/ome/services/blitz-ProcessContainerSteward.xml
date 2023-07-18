@@ -14,8 +14,8 @@
   <bean id="processContainerStewardTrigger"
         class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
     <property name="jobDetail" ref="processContainerStewardRun"/>
-    <!-- Every 10 minutes -->
-    <property name="cronExpression" value="*/10 * * * * ?"/>
+    <!-- Every 60 seconds -->
+    <property name="cronExpression" value="*/60 * * * * ?"/>
   </bean>
 
   <bean id="processContainerStewardRun"
