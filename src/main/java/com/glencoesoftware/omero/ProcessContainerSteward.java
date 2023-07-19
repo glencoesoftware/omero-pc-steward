@@ -25,6 +25,7 @@ import Ice.ObjectNotExistException;
 import ome.services.blitz.repo.ManagedImportProcessI;
 import ome.services.blitz.repo.ProcessContainer;
 import omero.cmd.HandlePrx;
+import omero.cmd.Status;
 
 /**
  * Steward for {@link ProcessContainer} who is periodically asked to perform
@@ -48,15 +49,31 @@ public class ProcessContainerSteward implements Runnable {
         int count = processes.size();
         log.info("Number of processes in the container: {}", count);
         for (ProcessContainer.Process p : processes) {
+            ManagedImportProcessI mip = null;
             try {
-                ManagedImportProcessI mip = (ManagedImportProcessI) p;
-                // NOTE: If the import is in process, this getHandle will work
-                // but will often/always return null; If the import has completed,
-                // getHandle will throw ObjectNotExistException
+                mip = (ManagedImportProcessI) p;
+                // If the file upload hasn't completed, this will return null
                 HandlePrx handle = mip.getHandle(null);
+                if (handle == null) {
+                    log.debug("Import process for fileset {} has null Handle. Continuing",
+                            mip.getFileset().getId().getValue());
+                    continue;
+                }
+                // If the import is still in process, this will return a valid Status
+                // But if the import is done, the server-side handle will have been
+                // Cleaned up and this will throw an ObjectNotExistException
+                Status status = handle.getStatus();
+                log.debug("Import process for fileset {} still in progress",
+                        mip.getFileset().getId().getValue());
             } catch (ObjectNotExistException e) {
-                log.info("ObjectNotExistException thrown by process.getHandle,"
-                        + " cleaning up process");
+                try {
+                    log.debug("ObjectNotExistException thrown, cleaning up "
+                            + "import process for fileset {}",
+                            mip.getFileset().getId().getValue());
+                } catch (Exception exc) {
+                    log.error("Unexpected exception getting the fileset id from the "
+                            + "import process", exc);
+                }
                 processContainer.removeProcess(p);
             } catch (Exception e) {
                 log.error("Unexpected exception", e);
