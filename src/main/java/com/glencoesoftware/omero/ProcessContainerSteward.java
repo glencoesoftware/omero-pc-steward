@@ -53,15 +53,15 @@ public class ProcessContainerSteward implements Runnable {
             try {
                 mip = (ManagedImportProcessI) p;
                 // If the file upload hasn't completed, this will return null
-                HandlePrx handle = mip.getHandle(null);
+                // but if the import is done or the session has been closed the
+                // server-side ImportProcess will have been removed from the
+                // object adapter and this will throw an ObjectNotExistException
+                HandlePrx handle = mip.getProxy().getHandle();
                 if (handle == null) {
                     log.debug("Import process for fileset {} has null Handle. Continuing",
                             mip.getFileset().getId().getValue());
                     continue;
                 }
-                // If the import is still in process, this will return a valid Status
-                // But if the import is done, the server-side handle will have been
-                // Cleaned up and this will throw an ObjectNotExistException
                 Status status = handle.getStatus();
                 log.debug("Import process for fileset {} still in progress",
                         mip.getFileset().getId().getValue());
