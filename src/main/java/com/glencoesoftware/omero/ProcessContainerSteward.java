@@ -52,29 +52,54 @@ public class ProcessContainerSteward implements Runnable {
             ManagedImportProcessI mip = null;
             try {
                 mip = (ManagedImportProcessI) p;
-                // If the file upload hasn't completed, this will return null
-                // but if the import is done or the session has been closed the
-                // server-side ImportProcess will have been removed from the
-                // object adapter and this will throw an ObjectNotExistException
+                /*
+                 * The ImportProcessPrx is initialized at the beginning of the import.
+                 * It is valid until it is closed after verifyUpload by
+                 * the ImportLibrary. This means that calling any method on
+                 * the ImportProcessPrx after verifyUpload throws
+                 * an ObjectNotExistException.
+                 * The HandlePrx is initialized during verifyUpload, so
+                 * until the upload is finished, it is null. The HanldePrx
+                 * is valid from the time the upload completes until the import
+                 * completes, at which time it is closed and calling its methods
+                 * will throw ObjectNotExistException.
+                 * If the HandlePrx is null AND the ImportProcessPrx has been closed,
+                 * file upload must have failed and we should clean up the
+                 * ManagedImportProcessI. We should also clean up the process
+                 * Once the import has fully finished (HandlePrx is not null and closed).
+                 */
+                // If this line doesn't throw, the upload is still in progress
                 HandlePrx handle = mip.getProxy().getHandle();
                 if (handle == null) {
-                    log.debug("Import process for fileset {} has null Handle. Continuing",
+                    log.info("Import process for fileset {} has null Handle. "
+                            + "File upload in progress",
                             mip.getFileset().getId().getValue());
                     continue;
                 }
-                Status status = handle.getStatus();
-                log.debug("Import process for fileset {} still in progress",
-                        mip.getFileset().getId().getValue());
-            } catch (ObjectNotExistException e) {
-                try {
-                    log.debug("ObjectNotExistException thrown, cleaning up "
-                            + "import process for fileset {}",
+            } catch (ObjectNotExistException e1) {
+                // ImportProcessPrx threw ObjectNotExistException - either the file import
+                // failed or the import progressed past verifyUpload
+                HandlePrx handle = mip.getHandle(null);
+                //If the handle is null, the upload failed and we should clean up
+                if (handle == null) {
+                    log.info("File upload failed for fileset {}, cleaning up",
                             mip.getFileset().getId().getValue());
-                } catch (Exception exc) {
-                    log.error("Unexpected exception getting the fileset id from the "
-                            + "import process", exc);
+                    processContainer.removeProcess(p);
+                    continue;
                 }
-                processContainer.removeProcess(p);
+                try {
+                    // If handle.getStatus() throws ObjectNotExistException, the import
+                    // is complete
+                    Status stautus = handle.getStatus();
+                    log.info("Import in progress for fileset {}",
+                            mip.getFileset().getId().getValue());
+                } catch (ObjectNotExistException e2) {
+                    log.info("ObjectNotExistException thrown by HandlePrx,"
+                            + "import is complete, "
+                            + "cleaning up import process for fileset {}",
+                            mip.getFileset().getId().getValue());
+                    processContainer.removeProcess(p);
+                }
             } catch (Exception e) {
                 log.error("Unexpected exception", e);
             }
