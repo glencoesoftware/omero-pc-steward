@@ -15,7 +15,7 @@
         class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
     <property name="jobDetail" ref="processContainerStewardRun"/>
     <!-- Every 30 seconds -->
-    <property name="cronExpression" value="*/30 * * * * ?"/>
+    <property name="cronExpression" value="${omero.managed.steward.cron:0 * * * * ?}"/>
   </bean>
 
   <bean id="processContainerStewardRun"
