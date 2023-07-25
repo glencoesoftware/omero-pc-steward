@@ -72,7 +72,7 @@ public class ProcessContainerSteward implements Runnable {
                 // If this line doesn't throw, the upload is still in progress
                 HandlePrx handle = mip.getProxy().getHandle();
                 if (handle == null) {
-                    log.info("Import process for fileset {} has null Handle. "
+                    log.debug("Import process for fileset {} has null Handle. "
                             + "File upload in progress", filesetId);
                     continue;
                 }
@@ -82,7 +82,7 @@ public class ProcessContainerSteward implements Runnable {
                 HandlePrx handle = mip.getHandle(null);
                 // If the handle is null, the upload failed and we should clean up
                 if (handle == null) {
-                    log.info("File upload failed for fileset {}, cleaning up",
+                    log.debug("File upload failed for fileset {}, cleaning up",
                             filesetId);
                     processContainer.removeProcess(p);
                     continue;
@@ -91,10 +91,10 @@ public class ProcessContainerSteward implements Runnable {
                     // If handle.getStatus() throws ObjectNotExistException, the import
                     // is complete
                     Status status = handle.getStatus();
-                    log.info("Import in progress for fileset {} step {} of {}",
+                    log.debug("Import in progress for fileset {} step {} of {}",
                             filesetId, status.currentStep, status.steps);
                 } catch (ObjectNotExistException e2) {
-                    log.info("ObjectNotExistException thrown by HandlePrx, "
+                    log.debug("ObjectNotExistException thrown by HandlePrx, "
                             + "import is complete, "
                             + "cleaning up import process for fileset {}",
                             filesetId);
