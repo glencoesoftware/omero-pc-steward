@@ -40,7 +40,6 @@ public class ProcessContainerSteward implements Runnable {
 
     public ProcessContainerSteward(ProcessContainer processContainer) {
         this.processContainer = processContainer;
-        log.info("Process container: {}", processContainer);
     }
 
     @Override
@@ -50,8 +49,10 @@ public class ProcessContainerSteward implements Runnable {
         log.info("Number of processes in the container: {}", count);
         for (ProcessContainer.Process p : processes) {
             ManagedImportProcessI mip = null;
+            long filesetId = -1;
             try {
                 mip = (ManagedImportProcessI) p;
+                filesetId = mip.getFileset().getId().getValue();
                 /*
                  * The ImportProcessPrx is initialized at the beginning of the import.
                  * It is valid until it is closed after verifyUpload by
@@ -59,45 +60,44 @@ public class ProcessContainerSteward implements Runnable {
                  * the ImportProcessPrx after verifyUpload throws
                  * an ObjectNotExistException.
                  * The HandlePrx is initialized during verifyUpload, so
-                 * until the upload is finished, it is null. The HanldePrx
+                 * until the upload is finished, it is null. The HandlePrx
                  * is valid from the time the upload completes until the import
                  * completes, at which time it is closed and calling its methods
                  * will throw ObjectNotExistException.
                  * If the HandlePrx is null AND the ImportProcessPrx has been closed,
                  * file upload must have failed and we should clean up the
                  * ManagedImportProcessI. We should also clean up the process
-                 * Once the import has fully finished (HandlePrx is not null and closed).
+                 * once the import has fully finished (HandlePrx is not null and closed).
                  */
                 // If this line doesn't throw, the upload is still in progress
                 HandlePrx handle = mip.getProxy().getHandle();
                 if (handle == null) {
                     log.info("Import process for fileset {} has null Handle. "
-                            + "File upload in progress",
-                            mip.getFileset().getId().getValue());
+                            + "File upload in progress", filesetId);
                     continue;
                 }
             } catch (ObjectNotExistException e1) {
                 // ImportProcessPrx threw ObjectNotExistException - either the file import
                 // failed or the import progressed past verifyUpload
                 HandlePrx handle = mip.getHandle(null);
-                //If the handle is null, the upload failed and we should clean up
+                // If the handle is null, the upload failed and we should clean up
                 if (handle == null) {
                     log.info("File upload failed for fileset {}, cleaning up",
-                            mip.getFileset().getId().getValue());
+                            filesetId);
                     processContainer.removeProcess(p);
                     continue;
                 }
                 try {
                     // If handle.getStatus() throws ObjectNotExistException, the import
                     // is complete
-                    Status stautus = handle.getStatus();
-                    log.info("Import in progress for fileset {}",
-                            mip.getFileset().getId().getValue());
+                    Status status = handle.getStatus();
+                    log.info("Import in progress for fileset {} step {} of {}",
+                            filesetId, status.currentStep, status.steps);
                 } catch (ObjectNotExistException e2) {
-                    log.info("ObjectNotExistException thrown by HandlePrx,"
+                    log.info("ObjectNotExistException thrown by HandlePrx, "
                             + "import is complete, "
                             + "cleaning up import process for fileset {}",
-                            mip.getFileset().getId().getValue());
+                            filesetId);
                     processContainer.removeProcess(p);
                 }
             } catch (Exception e) {
