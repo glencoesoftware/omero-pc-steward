@@ -30,6 +30,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: omeropcsteward
+          name: omero-pc-steward
           path: build/libs/*.zip
           if-no-files-found: error
