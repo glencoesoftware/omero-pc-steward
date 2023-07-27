@@ -21,9 +21,12 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'zulu'
-      - name: Run commands
+      - name: Build
         run: |
           ./gradlew ${{ env.gradle_commands }}
+      - name: Zip
+        run: |
+          zip -j build/libs/omero-pc-steward.zip build/libs/*.jar
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
