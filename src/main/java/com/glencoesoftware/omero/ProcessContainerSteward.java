@@ -17,9 +17,15 @@
  */
 package com.glencoesoftware.omero;
 
+import java.util.List;
+
 import org.slf4j.LoggerFactory;
 
+import Ice.ObjectNotExistException;
+import ome.services.blitz.repo.ManagedImportProcessI;
 import ome.services.blitz.repo.ProcessContainer;
+import omero.cmd.HandlePrx;
+import omero.cmd.Status;
 
 /**
  * Steward for {@link ProcessContainer} who is periodically asked to perform
@@ -34,13 +40,70 @@ public class ProcessContainerSteward implements Runnable {
 
     public ProcessContainerSteward(ProcessContainer processContainer) {
         this.processContainer = processContainer;
-        log.info("Process container: {}", processContainer);
     }
 
     @Override
     public void run() {
-        int count = processContainer.listProcesses(null).size();
+        List<ProcessContainer.Process> processes = processContainer.listProcesses(null);
+        int count = processes.size();
         log.info("Number of processes in the container: {}", count);
+        for (ProcessContainer.Process p : processes) {
+            ManagedImportProcessI mip = null;
+            long filesetId = -1;
+            try {
+                mip = (ManagedImportProcessI) p;
+                filesetId = mip.getFileset().getId().getValue();
+                /*
+                 * The ImportProcessPrx is initialized at the beginning of the import.
+                 * It is valid until it is closed after verifyUpload by
+                 * the ImportLibrary. This means that calling any method on
+                 * the ImportProcessPrx after verifyUpload throws
+                 * an ObjectNotExistException.
+                 * The HandlePrx is initialized during verifyUpload, so
+                 * until the upload is finished, it is null. The HandlePrx
+                 * is valid from the time the upload completes until the import
+                 * completes, at which time it is closed and calling its methods
+                 * will throw ObjectNotExistException.
+                 * If the HandlePrx is null AND the ImportProcessPrx has been closed,
+                 * file upload must have failed and we should clean up the
+                 * ManagedImportProcessI. We should also clean up the process
+                 * once the import has fully finished (HandlePrx is not null and closed).
+                 */
+                // If this line doesn't throw, the upload is still in progress
+                HandlePrx handle = mip.getProxy().getHandle();
+                if (handle == null) {
+                    log.debug("Import process for fileset {} has null Handle. "
+                            + "File upload in progress", filesetId);
+                    continue;
+                }
+            } catch (ObjectNotExistException e1) {
+                // ImportProcessPrx threw ObjectNotExistException - either the file import
+                // failed or the import progressed past verifyUpload
+                HandlePrx handle = mip.getHandle(null);
+                // If the handle is null, the upload failed and we should clean up
+                if (handle == null) {
+                    log.debug("File upload failed for fileset {}, cleaning up",
+                            filesetId);
+                    processContainer.removeProcess(p);
+                    continue;
+                }
+                try {
+                    // If handle.getStatus() throws ObjectNotExistException, the import
+                    // is complete
+                    Status status = handle.getStatus();
+                    log.debug("Import in progress for fileset {} step {} of {}",
+                            filesetId, status.currentStep, status.steps);
+                } catch (ObjectNotExistException e2) {
+                    log.debug("ObjectNotExistException thrown by HandlePrx, "
+                            + "import is complete, "
+                            + "cleaning up import process for fileset {}",
+                            filesetId);
+                    processContainer.removeProcess(p);
+                }
+            } catch (Exception e) {
+                log.error("Unexpected exception", e);
+            }
+        }
     }
 
 }
