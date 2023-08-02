@@ -9,31 +9,34 @@ Requirements
 * OMERO 5.6.x+
 * Java 8+
 
-Setup
-=====
-Dev
----
-1. Clone the repository
+Installation
+============
 
-		git clone git@github.com:glencoesoftware/omero-pc-steward.git
+The latest release, built by GitHub Actions, can be found here:
 
-2. Build with
+* https://github.com/glencoesoftware/omero-pc-steward/releases
 
-		./gradlew build
+It can also be build by hand:
 
-3. Copy the resulting `.jar` from `build/libs` into the `OMERO.server/lib/server` directory of your OMERO installation
-4. Optionally, configure the frequency of the cleanup checks by setting the config `omero.managed.steward.cron` to a valid cron string (see https://www.quartz-scheduler.org/api/1.8.6/org/quartz/CronExpression.html). The default is set to check every minute for completed import processes to clean up. If you wanted to check every 30 seconds, you could set
+        git clone git@github.com:glencoesoftware/omero-pc-steward.git
+        cd omero-pc-steward
+        ./gradlew jar
 
-		omero config set omero.managed.steward.cron "*/30 * * * * ?"
+1. Copy the downloaded `.jar` or the built one from `build/libs` into the `$OMERODIR/lib/server` directory of your OMERO installation
+
+2. Configure logging by adding `<logger name="com.glencoesoftware" level="INFO"/>` to the "ROOT logger" section of `$OMERODIR/etc/logback.xml`
+
+3. Optionally, configure the frequency of the cleanup checks by setting the config `omero.managed.steward.cron` to a valid cron string (see https://www.quartz-scheduler.org/api/1.8.6/org/quartz/CronExpression.html). The default is set to check every minute for completed import processes to clean up. If you wanted to check every 30 seconds, you could set
+
+        omero config set omero.managed.steward.cron '*/30 * * * * ?'
 
 5. Restart OMERO server with
 
-		omero admin restart
+        omero admin restart
 
-6. In `OMERO.server/var/log/Blitz-0.log`, You should see logging from the ProcessContainerSteward once per configured period (default every minute) reporting how many `ImportProcesses` there are in the `ProcessContainer`
+6. In `$OMERODIR/var/log/Blitz-0.log`, you should see logging from the ProcessContainerSteward once per configured period (default every minute) reporting how many `ImportProcesses` there are in the `ProcessContainer`
 
 		2023-07-25 10:02:30,001 INFO  [       c.g.omero.ProcessContainerSteward] (2-thread-2) Number of processes in the container: 0
-
 
 Reference
 =========
