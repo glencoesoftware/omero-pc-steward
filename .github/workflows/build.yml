@@ -30,3 +30,20 @@ jobs:
           name: omero-pc-steward
           path: build/libs/*.jar
           if-no-files-found: error
+  upload:
+    name: Create release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startswith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+      - name: List artifacts
+        run: ls -R
+      - name: Create release draft
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            omero-pc-steward/*.jar
+          draft: true
+          fail_on_unmatched_files: true
