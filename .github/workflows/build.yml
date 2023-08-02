@@ -24,12 +24,9 @@ jobs:
       - name: Build
         run: |
           ./gradlew ${{ env.gradle_commands }}
-      - name: Zip
-        run: |
-          zip -j build/libs/omero-pc-steward.zip build/libs/*.jar
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: omero-pc-steward
-          path: build/libs/*.zip
+          path: build/libs/*.jar
           if-no-files-found: error
