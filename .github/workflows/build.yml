@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        java: [11, 17]
+        java: [8, 11, 17]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     env:
@@ -26,6 +26,7 @@ jobs:
           ./gradlew ${{ env.gradle_commands }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
+        if: matrix.java == 8
         with:
           name: omero-pc-steward
           path: build/libs/*.jar
