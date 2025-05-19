@@ -25,7 +25,7 @@ jobs:
         run: |
           ./gradlew ${{ env.gradle_commands }}
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: matrix.java == 8
         with:
           name: omero-pc-steward
@@ -38,7 +38,7 @@ jobs:
     if: startswith(github.ref, 'refs/tags/')
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: List artifacts
         run: ls -R
       - name: Create release draft
