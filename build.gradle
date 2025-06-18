@@ -51,6 +51,25 @@ publishing {
     publications {
         omeroPcSteward(MavenPublication) {
             from components.java
+            pom {
+                name = 'OMERO Process Container Steward'
+                licenses {
+                    license {
+                        name = 'GNU General Public License version 2'
+                        url = 'http://www.gnu.org/licenses/gpl-2.0.txt'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url 'https://artifacts.glencoesoftware.com/artifactory/gs-omero-snapshots-local/'
+            credentials {
+               username = project.properties.ArtifactoryUserName
+               password = project.properties.ArtifactoryPassword
+            }
         }
     }
 }
