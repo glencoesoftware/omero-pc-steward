@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        java: [8, 11, 17]
+        java: [11, 17, 21]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     env:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
           distribution: 'zulu'
@@ -26,25 +26,12 @@ jobs:
           ./gradlew ${{ env.gradle_commands }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
-        if: matrix.java == 8
+        if: matrix.java == 11
         with:
           name: omero-pc-steward
           path: build/libs/*.jar
           if-no-files-found: error
-  upload:
-    name: Create release
-    needs: build
-    runs-on: ubuntu-latest
-    if: startswith(github.ref, 'refs/tags/')
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-      - name: List artifacts
-        run: ls -R
-      - name: Create release draft
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            omero-pc-steward/*.jar
-          draft: true
-          fail_on_unmatched_files: true
+      - name: Publish artifacts
+        if: github.event_name != 'pull_request' && matrix.java == 11 && github.repository_owner == 'glencoesoftware'
+        run: |
+          ./gradlew -PArtifactoryUserName=${ArtifactoryUserName} -PArtifactoryPassword=${ArtifactoryPassword} publish

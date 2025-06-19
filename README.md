@@ -12,9 +12,8 @@ Requirements
 Installation
 ============
 
-The latest release, built by GitHub Actions, can be found here:
-
-* https://github.com/glencoesoftware/omero-pc-steward/releases
+The latest release artifact can be found from
+[Glencoe Artifactory](https://artifacts.glencoesoftware.com/ui/native/omero-plus/com/glencoesoftware/omero/).
 
 It can also be build by hand:
 
