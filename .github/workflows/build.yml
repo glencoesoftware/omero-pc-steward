@@ -14,6 +14,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       gradle_commands: --stacktrace build
+      ArtifactoryUserName: ${{ secrets.JENKINS_USERNAME }}
+      ArtifactoryPassword: ${{ secrets.JENKINS_PASSWORD }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK ${{ matrix.java }}
