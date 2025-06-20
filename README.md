@@ -25,7 +25,7 @@ It can also be build by hand:
 
 2. Configure logging by adding `<logger name="com.glencoesoftware" level="INFO"/>` to the "ROOT logger" section of `$OMERODIR/etc/logback.xml`
 
-3. Optionally, configure the frequency of the cleanup checks by setting the config `omero.managed.steward.cron` to a valid cron string (see https://www.quartz-scheduler.org/api/1.8.6/org/quartz/CronExpression.html). The default is set to check every minute for completed import processes to clean up. If you wanted to check every 30 seconds, you could set
+3. Optionally, configure the frequency of the cleanup checks by setting the config `omero.managed.steward.cron` to a valid cron string (see https://www.quartz-scheduler.org/api/2.3.0/org/quartz/CronExpression.html). The default is set to check every minute for completed import processes to clean up. If you wanted to check every 30 seconds, you could set
 
         omero config set omero.managed.steward.cron '*/30 * * * * ?'
 
